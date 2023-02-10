@@ -157,7 +157,6 @@ function dither() {
 
   var imagedata = screenctx.getImageData(0, 0, 512, 512);
   var data = imagedata.data;
-  data = grayscale(data);
   data = floyd_steinberg(data, 512, 512);
   screenctx.putImageData(imagedata, 0, 0);
   screenctx.showing_original = false;
@@ -184,36 +183,62 @@ function grayscale(data) {
 
 var weights = [7, 3, 5, 1];
 
+// https://github.com/cnlohr/epaper_projects/blob/master/atmega168pb_waveshare_color/tools/converter/converter.c
+var palette = [
+	0, 0, 0,
+	255, 255, 255,
+	67, 138, 28,
+	100, 64, 255,
+	191, 0, 0,
+	255, 243, 56,
+	232, 126, 0,
+	194 ,164 , 244
+];
+
+// finds the nearest color, based on our palette
+function find_color(v) {
+	var all = {};
+	for (var c = 0; c < palette.length/3; c++) {
+		var d = Array.from(v).map((n, i) => n - palette[c*3+i]);
+		var dist = d.reduce((t, n) => t + n*n, 0);
+		all[dist] = c;
+	}
+	return all[Math.min(...Object.keys(all))];
+}
+
+function mapcolors(arr, off, func) {
+	const s = arr.subarray(off, off+3);
+	s.set(s.map(func));
+}
+
 function floyd_steinberg(data, width, height) {
   for (var i=0; i<data.length; i+=4) {
     var y = Math.floor(i/4/width);
     var x = (i/4) % width;
 
-    var v = data[i];
-    var b = v < 128 ? 0 : 255; // bitonal value
-    var err = v - b;
+    var v = data.subarray(i, i+3);
+    var nc = find_color(v);
+    var newcolor = palette.slice(nc*3, nc*3+3);
+    var err = Array.from(v).map((n, i) => n - newcolor[i]);
 
-    data[i] = b ? 255 : 0;
-    data[i+1] = b ? 255 : 0;
-    data[i+2] = b ? 255 : 0;
-    data[i+3] = b ? 255 : 0;
+    v.set(newcolor);
 
     // default Floyd-Steinberg values:
     //     . . .
     //     . @ 7
     //     3 5 1
     if (x + 1 < width) {
-      data[i+4] += err * weights[0]/16;
+      mapcolors(data, i+4, (v, i) => v + err[i] * weights[0]/16);
     }
     if (y+1 == height) {
       continue;
     }
     if (x > 0) {
-      data[i+width*4-4] += err * weights[1]/16;
+      mapcolors(data, i+width*4-4, (v, i) => v + err[i] * weights[1]/16);
     }
-    data[i+width*4] += err * weights[2]/16;
+    mapcolors(data, i+width*4, (v, i) => v + err[i] * weights[2]/16);
     if (x + 1 < width) {
-      data[i+width*4+4] += err * weights[3]/16;
+      mapcolors(data, i+width*4+4, (v, i) => v + err[i] * weights[3]/16);
     }
   }
   return data;

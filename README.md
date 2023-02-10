@@ -1,6 +1,12 @@
-# dither-dream
+# dither-toy
 
-Dither-dream is a tool for exploring variations on the Floyd-Steinberg dithering algorithm.
+A quick hack to adapt an existing JS dithering demo to see how images look like,
+after dithering to a fixed color palette.
+
+---
+
+Check out the original work, [**dither-dream**](https://github.com/kgjenkins/dither-dream), 
+a tool for exploring variations on the Floyd-Steinberg dithering algorithm.
 
 Try the [Dither-dream online demo](https://kgjenkins.github.io/dither-dream/)
 
@@ -83,6 +89,3 @@ Finally, we can create some interesting video effects by animating quickly throu
 
 ![glitching the algorithm](image/glitch.gif)
 
-# Your turn
-
-See the [Dither-dream online demo](https://kgjenkins.github.io/dither-dream/) to play with the parameters and see the results for yourself!
